@@ -10,7 +10,241 @@
     <link href="https://tailwindcss.com/_next/static/css/76dbff2afca7d147.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
-    <link href="index.css" rel="stylesheet" />
+<!--     <link href="index.css" rel="stylesheet" /> -->
+    <style type="text/tailwindcss">
+  @theme {
+    /* Custom Colors */
+    --color-blue-custom: #60a5fa;
+    --color-blue-light: #93c5fd;
+    --color-green-light-custom: #d1fae5;
+    --color-red-light-custom: #fee2e2;
+    --color-gray-dark: #1f2937;
+    --color-gray-darker: #111827;
+    --color-gray-darkest: #0d121c;
+    --color-gray-light: #d1d5db;
+    --color-gray-lighter: #9ca3af;
+    --color-blue-gradient-start: #3b82f6;
+    --color-blue-gradient-end: #1e40af;
+    --color-green-gradient-start: #16a34a;
+    --color-green-gradient-end: #14532d;
+    --color-red-gradient-start: #dc2626;
+    --color-red-gradient-end: #7f1d1d;
+    --color-gray-border: #374151;
+
+    /* Custom Background Images for Gradients */
+    --background-image-gradient-blue: linear-gradient(135deg, #3b82f6, #1e40af);
+    --background-image-gradient-green: linear-gradient(135deg, #16a34a, #14532d);
+    --background-image-gradient-red: linear-gradient(135deg, #dc2626, #7f1d1d);
+    --background-image-gradient-navbar: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+    --background-image-gradient-footer: linear-gradient(180deg, #111827 0%, #0d121c 100%);
+    --background-image-gradient-nav-link: linear-gradient(90deg, #60a5fa, #3b82f6);
+
+    /* Custom Animations */
+    --animation-slideIn: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-slideDown: slideDown 0.3s ease;
+    --animation-fadeIn: fadeIn 0.5s ease-in-out;
+    --animation-pulse: pulse 1.5s infinite;
+    --animation-spin: spin 0.8s linear infinite;
+
+    /* Custom Keyframes */
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(96, 165, 250, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0); }
+    }
+    @keyframes спустя {
+      to { transform: rotate(360deg); }
+    }
+  }
+
+  @layer utilities {
+    /* Badge Styles */
+    .badge-custom {
+      @apply inline-flex items-center bg-[--background-image-gradient-blue] text-white text-xs font-bold px-3 py-1.5 rounded-full transition-transform duration-200 ease-in hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(0,0,0,0.3)];
+    }
+    .registration-open {
+      @apply inline-flex items-center bg-[--background-image-gradient-green] text-[--color-green-light-custom] text-xs font-bold px-3 py-1.5 rounded-full transition-transform duration-200 ease-in hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(0,0,0,0.3)];
+    }
+    .registration-closed {
+      @apply inline-flex items-center bg-[--background-image-gradient-red] text-[--color-red-light-custom] text-xs font-bold px-3 py-1.5 rounded-full transition-transform duration-200 ease-in hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(0,0,0,0.3)];
+    }
+
+    /* Card Styles */
+    .card {
+      @apply bg-[--color-gray-dark] rounded-xl shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] p-6 flex flex-col items-center text-center gap-4 animate-[fadeIn_0.8s_both];
+    }
+    .card-img {
+      @apply w-24 h-24 rounded-full object-cover border-4 border-[--color-blue-custom] mb-3 sm:w-20 sm:h-20;
+    }
+    .testimonial-quote {
+      @apply italic text-[--color-gray-light];
+    }
+    .mentor-name {
+      @apply text-xl font-semibold text-white;
+    }
+    .mentor-designation {
+      @apply text-sm text-[--color-blue-custom] font-medium mb-2;
+    }
+
+    /* Social Link */
+    .social-link {
+      @apply inline-block px-4 py-2 border border-[--color-blue-custom] text-[--color-blue-custom] rounded-lg transition-all duration-200 hover:bg-[--color-blue-custom] hover:text-white focus:bg-[--color-blue-custom] focus:text-white focus:ring-2 focus:ring-[--color-blue-light] focus:ring-offset-0 outline-none;
+    }
+
+    /* Company Logos */
+    .company-logos {
+      @apply flex justify-center flex-wrap gap-3 mb-4;
+    }
+
+    /* Success Story */
+    .success-story {
+      @apply bg-[--color-gray-dark] rounded-xl shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)] p-6 border border-[--color-gray-border] flex flex-col items-center;
+    }
+    .success-story h3 {
+      @apply text-lg font-semibold text-white mb-2;
+    }
+    .success-story p {
+      @apply text-[--color-gray-light];
+    }
+
+    /* Navbar */
+    .navbar {
+      @apply bg-[--background-image-gradient-navbar] shadow-[0_2px_8px_rgba(0,0,0,0.3)] border-b border-[--color-blue-custom]/20;
+    }
+    .nav-menu {
+      @apply relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:fixed md:top-0 md:right-0 md:h-screen md:w-4/5 md:max-w-[300px] md:bg-[--background-image-gradient-navbar] md:flex md:flex-col md:p-8 md:shadow-[-4px_0_8px_rgba(0,0,0,0.3)] md:backdrop-blur-lg md:overflow-y-auto md:translate-x-full;
+    }
+    .nav-menu.active {
+      @apply md:translate-x-0 md:animate-[--animation-slideIn];
+    }
+    .nav-link {
+      @apply relative px-5 py-3 font-medium text-[--color-blue-light] rounded-lg flex items-center gap-2 transition-all duration-300 ease-in hover:text-white hover:scale-105 hover:bg-[--color-blue-custom]/20 md:px-5 md:py-5 md:text-lg md:mb-3 md:justify-between;
+    }
+    .nav-link::after {
+      content: '';
+      @apply absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 bg-[--background-image-gradient-nav-link] w-0 transition-all duration-300 ease-in;
+    }
+    .nav-link:hover::after {
+      @apply w-3/5;
+    }
+    .dropdown {
+      @apply relative;
+    }
+    .dropdown-toggle::after {
+      content: '\f078';
+      font-family: 'Font Awesome 6 Free';
+      @apply font-black text-[0.7rem] ml-2 transition-transform duration-300 ease-in;
+    }
+    .dropdown:hover .dropdown-toggle::after {
+      @apply rotate-180;
+    }
+    .dropdown-menu {
+      @apply hidden absolute top-full left-0 bg-[--color-gray-dark] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.3)] min-w-[200px] z-[1000] py-2 border border-[--color-blue-custom]/20 backdrop-blur-md md:static md:shadow-none md:bg-transparent md:p-4 md:border-none md:backdrop-blur-none;
+    }
+    .dropdown:hover .dropdown-menu {
+      @apply block animate-[--animation-slideDown];
+    }
+    .dropdown-item {
+      @apply block px-5 py-3 text-[--color-blue-light] text-[0.95rem] transition-all duration-200 ease-in hover:bg-[--color-blue-custom]/20 hover:text-white md:px-5 md:py-4 md:text-[1.1rem];
+    }
+    .search-input {
+      @apply md:w-full md:mt-4 md:p-3 md:text-base;
+    }
+    .hamburger {
+      @apply hidden md:block z-[1001];
+    }
+
+    /* Carousel */
+    .carousel {
+      @apply relative overflow-hidden max-w-[600px] mx-auto;
+    }
+    .carousel-inner {
+      @apply flex transition-transform duration-500 ease-in-out;
+    }
+    .carousel-item {
+      @apply min-w-full flex justify-center;
+    }
+
+    /* Course Meta */
+    .course-meta {
+      @apply animate-[--animation-fadeIn];
+    }
+
+    /* Filter Button */
+    .filter-btn {
+      @apply relative inline-flex items-center gap-2 px-6 py-3 border-2 border-[--color-blue-custom] text-[--color-blue-custom] bg-transparent rounded-full font-semibold transition-all duration-300 ease-in hover:bg-[--background-image-gradient-blue] hover:text-white hover:scale-105 hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[--color-blue-light] focus:ring-offset-0 focus:animate-[--animation-pulse] overflow-hidden;
+    }
+    .filter-btn img {
+      @apply w-5 h-5 object-contain;
+    }
+    .filter-btn.active {
+      @apply bg-[--background-image-gradient-blue] text-white border-[--color-blue-gradient-start];
+    }
+    .filter-btn .spinner {
+      @apply hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-[--animation-spin];
+    }
+    .filter-btn.loading .spinner {
+      @apply inline-block;
+    }
+
+    /* Learn More Button */
+    .learn-more-btn {
+      @apply inline-flex items-center gap-2 px-6 py-3 bg-[--background-image-gradient-blue] text-white font-semibold rounded-full transition-all duration-300 ease-in hover:bg-[linear-gradient(135deg,#3b82f6,#1e40af)] hover:scale-105 hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)] focus:outline-none focus:ring-2 focus:ring-[--color-blue-light] focus:ring-offset-0 focus:animate-[--animation-pulse] no-underline;
+    }
+
+    /* Category Icon */
+    .category-icon {
+      @apply w-6 h-6 object-contain mr-2;
+    }
+
+    /* Footer Styles */
+    .footer {
+      @apply bg-[--background-image-gradient-footer] text-[--color-gray-light] py-12 px-6 border-t border-[--color-blue-custom]/20;
+    }
+    .footer a {
+      @apply text-[--color-blue-light] transition-all duration-200 ease-in hover:text-[--color-blue-custom] hover:translate-x-0.5;
+    }
+    .footer-logo {
+      @apply text-2xl font-extrabold text-white mb-4;
+    }
+    .footer-section {
+      @apply mb-8 md:mb-0;
+    }
+    .footer-section h3 {
+      @apply text-xl font-semibold text-white mb-4;
+    }
+    .footer-section ul {
+      @apply list-none p-0;
+    }
+    .footer-section ul li {
+      @apply mb-3;
+    }
+    .footer-social a {
+      @apply text-2xl text-[--color-blue-custom] mr-4 transition-all duration-200 ease-in hover:text-[--color-blue-gradient-start] hover:scale-110;
+    }
+    .footer-contact p {
+      @apply mb-2 flex items-center gap-2;
+    }
+    .footer-bottom {
+      @apply border-t border-[--color-blue-custom]/20 pt-6 text-center text-[--color-gray-lighter];
+    }
+    .footer-content {
+      @apply md:grid md:grid-cols-3 md:gap-8;
+    }
+  }
+</style>
 </head>
 
 <body class="bg-gray-900 text-gray-100 transition-colors duration-500">
