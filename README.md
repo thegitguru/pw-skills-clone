@@ -1,6 +1,6 @@
 # PW Skills Courses Platform
 
-![PW Skills Banner](https://cdn.pwskills.com/assets/uploads/banners/hero-banner.jpg)
+![PW Skills Banner](https://raw.githubusercontent.com/thegitguru/pw-skills-clone/73918b2511424feaa571086609f94ba173617887/logo.svg)
 
 Welcome to the **PW Skills Courses Platform**, a dynamic web application showcasing free and paid courses, mentors, testimonials, and success stories from PW Skills. Built with modern web technologies, this project provides an engaging, responsive, and user-friendly experience for exploring educational content.
 
