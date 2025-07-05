@@ -175,7 +175,7 @@ function processData(courseData, categoryData) {
                     categoryTitle: category.title,
                     categorySlug: cat?.slug || category.slug || 'course',
                     categoryColor: category.categoryColor,
-                    categoryIcon: cat?.icon || 'https://placehold.co/24',
+                    categoryIcon: category?.icon || 'https://placehold.co/24',
                     categoryId: cat?.categoryId
                 };
             })
@@ -361,7 +361,7 @@ function renderPaidCourses(categories) {
             categorySection.dataset.category = category.slug;
             categorySection.innerHTML = `
                         <h3 class="text-xl font-bold mb-3 text-white flex items-center gap-2">
-                            <img src="${sanitize(cat?.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
+                            <img src="${sanitize(category?.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
                             ${sanitize(category.title)}
                         </h3>
                         ${category.categoryMeta ? `
@@ -419,7 +419,7 @@ function renderPaidCourses(categories) {
                                         <div class="p-5 space-y-3">
                                             <h5 class="text-lg font-semibold text-white truncate">${sanitize(course.title || 'Untitled Course')}</h5>
                                             <p class="text-sm text-blue-400 flex items-center gap-2">
-                                                <img src="${sanitize(cat?.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
+                                                <img src="${sanitize(category?.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
                                                 ${sanitize(category.title)}
                                             </p>
                                             <p class="text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-clock"></i> Duration: ${sanitize(course.duration || 'N/A')}</p>
@@ -690,7 +690,7 @@ function filterContent(categoryFilter, searchTerms = []) {
             categorySection.dataset.category = category?.slug;
             categorySection.innerHTML = `
                         <h3 class="category-title text-xl font-bold mb-3 text-white flex items-center gap-2">
-                            <img src="${sanitize(cat?.icon || 'https://placehold.co/24')}" alt="${sanitize(categoryTitle)} icon" class="category-icon">
+                            <img src="${sanitize(category?.icon || 'https://placehold.co/24')}" alt="${sanitize(categoryTitle)} icon" class="category-icon">
                             ${sanitize(categoryTitle)}
                         </h3>
                         ${category?.categoryMeta ? `
