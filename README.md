@@ -33,8 +33,8 @@ Welcome to the **PW Skills Courses Platform**, a dynamic and responsive web appl
 ```plaintext
 ├── index.html          # Main HTML file with navigation, course meta, and footer
 ├── README.md           # Project documentation (this file)
-├── assets/             # Static assets (images, etc., if added)
-└── scripts/            # JavaScript files (if modularized in future updates)
+├── index.css           # CSS Stylesheet file
+└── index.js            # JavaScript file
 ```
 
 ## 📸 Screenshots
