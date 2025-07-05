@@ -39,7 +39,7 @@ Welcome to the **PW Skills Courses Platform**, a dynamic web application showcas
 
 | Desktop View | Mobile View |
 |--------------|-------------|
-| ![Desktop Screenshot](https://placehold.co/600x400?text=Desktop+View) | ![Mobile Screenshot](https://placehold.co/300x600?text=Mobile+View) |
+| ![Desktop Screenshot](https://github.com/thegitguru/pw-skills-clone/blob/main/desktop-view.png) | ![Mobile Screenshot](https://github.com/thegitguru/pw-skills-clone/blob/main/mobile-view.png) |
 
 ## 🏁 Getting Started
 
