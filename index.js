@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-    // Add smooth scrolling for footer links
     document.querySelectorAll('.footer a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
@@ -42,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 const sanitize = (html) => DOMPurify.sanitize(html || '', { USE_PROFILES: { html: true } });
 let allCourses = [];
 let paidCategories = [];
@@ -50,6 +50,7 @@ let testimonials = [];
 let companiesLogos = [];
 let successStories = [];
 let categories = [];
+
 function getRegistrationStatus(startDate, endDate) {
     const now = new Date();
     const start = startDate ? new Date(startDate) : null;
@@ -57,6 +58,7 @@ function getRegistrationStatus(startDate, endDate) {
     if (!start || !end) return 'N/A';
     return now >= start && now <= end ? 'Open' : 'Closed';
 }
+
 function showSkeletonLoader(container, count) {
     const fragment = document.createDocumentFragment();
     for (let i = 0; i < count; i++) {
@@ -67,6 +69,7 @@ function showSkeletonLoader(container, count) {
     container.innerHTML = '';
     container.appendChild(fragment);
 }
+
 async function fetchData() {
     const cacheKeyCourses = 'pwSkillsCoursesData';
     const cacheKeyCategories = 'pwSkillsCategoriesData';
@@ -143,6 +146,7 @@ async function fetchData() {
         }
     }
 }
+
 function processData(courseData, categoryData) {
     const loader = document.getElementById('loader');
     const freeCoursesContainer = document.getElementById('freeCoursesContainer').querySelector('div');
@@ -162,24 +166,24 @@ function processData(courseData, categoryData) {
                 type: 'free',
                 categoryTitle: category?.title || course.parentCategoryId?.title || 'N/A',
                 categoryIcon: category?.icon || 'https://placehold.co/24',
-                categoryId: category?.categoryId || course.parentCategoryId?._id,
+                categoryId: category?.categoryId || course.parentCategoryId?._id || 'unknown',
+                parentCategoryId: course.parentCategoryId?._id || 'unknown',
                 categorySlug: category?.slug || 'course'
             };
         }),
-        ...(courseData.paidCourses || []).flatMap(category =>
-            category.courseDetails.map(course => {
-                const cat = categories.find(c => c.title === category.title);
-                return {
-                    ...course,
-                    type: 'paid',
-                    categoryTitle: category.title,
-                    categorySlug: cat?.slug || category.slug || 'course',
-                    categoryColor: category.categoryColor,
-                    categoryIcon: category?.icon || 'https://placehold.co/24',
-                    categoryId: cat?.categoryId
-                };
-            })
-        )
+        ...(courseData.paidCourses || []).flatMap(category => {
+            const cat = categories.find(c => c.categoryId === category.categoryId?._id);
+            return category.courseDetails.map(course => ({
+                ...course,
+                type: 'paid',
+                categoryTitle: cat?.title || category.title || 'N/A',
+                categorySlug: cat?.slug || category.slug || 'course',
+                categoryColor: category.categoryColor,
+                categoryIcon: cat?.icon || category.categoryImage?.icon || 'https://placehold.co/24',
+                categoryId: cat?.categoryId || category.categoryId?._id || 'unknown',
+                parentCategoryId: course.parentCategoryId || category.categoryId?._id || 'unknown'
+            }));
+        })
     ];
     paidCategories = courseData.paidCourses || [];
     mentors = courseData.mentors || [];
@@ -195,10 +199,10 @@ function processData(courseData, categoryData) {
         button.setAttribute('aria-pressed', 'false');
         button.setAttribute('aria-describedby', `filter-${category.categoryId}-desc`);
         button.innerHTML = `
-                    <img src="${sanitize(category.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
-                    ${sanitize(category.title)}
-                    <span class="spinner"></span>
-                `;
+            <img src="${sanitize(category.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
+            ${sanitize(category.title)}
+            <span class="spinner"></span>
+        `;
         filterFragment.appendChild(button);
         const desc = document.createElement('span');
         desc.id = `filter-${category.categoryId}-desc`;
@@ -259,6 +263,162 @@ function processData(courseData, categoryData) {
         }
     });
 }
+
+function filterContent(categoryFilter, searchTerms = []) {
+    const freeCoursesContainer = document.getElementById('freeCoursesContainer').querySelector('div');
+    const paidCoursesContainer = document.getElementById('paidCoursesContainer').querySelector('div');
+    const mentorsContainer = document.getElementById('mentorsContainer').querySelector('div');
+    const testimonialsContainer = document.getElementById('testimonialsContainer').querySelector('div');
+    let filteredCourses = allCourses;
+    if (categoryFilter !== 'all') {
+        filteredCourses = allCourses.filter(course => course.parentCategoryId === categoryFilter);
+    }
+    if (searchTerms.length > 0) {
+        filteredCourses = filteredCourses.filter(course =>
+            searchTerms.every(term =>
+                course.title.toLowerCase().includes(term) ||
+                (course.categoryTitle || '').toLowerCase().includes(term)
+            )
+        );
+    }
+    let filteredMentors = mentors;
+    if (searchTerms.length > 0) {
+        filteredMentors = mentors.filter(mentor =>
+            searchTerms.every(term =>
+                mentor.name.toLowerCase().includes(term) ||
+                (mentor.description || '').toLowerCase().includes(term)
+            )
+        );
+    }
+    let filteredTestimonials = testimonials;
+    if (searchTerms.length > 0) {
+        filteredTestimonials = testimonials.filter(testimonial =>
+            searchTerms.every(term =>
+                testimonial.name.toLowerCase().includes(term) ||
+                (testimonial.description || '').toLowerCase().includes(term) ||
+                (testimonial.courseId?.title || '').toLowerCase().includes(term)
+            )
+        );
+    }
+    const freeCourses = filteredCourses.filter(course => course.type === 'free');
+    const paidCourses = filteredCourses.filter(course => course.type === 'paid');
+    renderCourses(freeCourses, freeCoursesContainer, 'free');
+    renderMentors(filteredMentors);
+    renderTestimonials(filteredTestimonials);
+    paidCoursesContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    if (categoryFilter === 'all' && searchTerms.length === 0) {
+        renderPaidCourses(paidCategories);
+    } else {
+        const groupedByCategory = paidCourses.reduce((acc, course) => {
+            const cat = categories.find(cat => cat.categoryId === course.parentCategoryId) || {};
+            const categoryIcon = cat?.icon || 'https://placehold.co/24';
+            if (!acc[course.categoryTitle]) {
+                acc[course.categoryTitle] = [];
+            }
+            acc[course.categoryTitle].push({ ...course, categoryIcon });
+            return acc;
+        }, {});
+        Object.entries(groupedByCategory).forEach(([categoryTitle, courses]) => {
+            const category = paidCategories.find(cat => cat.title === categoryTitle) || {};
+            const cat = categories.find(c => c.categoryId === category.categoryId?._id) || {};
+            const categoryIcon = cat?.icon || 'https://placehold.co/24';
+            const categorySection = document.createElement('div');
+            categorySection.className = `category-section category-${sanitize(category?.slug || 'unknown')} animate__animated animate__fadeIn`;
+            categorySection.dataset.category = category?.slug || 'unknown';
+            categorySection.innerHTML = `
+                <h3 class="category-title text-xl font-bold mb-3 text-white flex items-center gap-2">
+                    <img src="${sanitize(categoryIcon)}" alt="${sanitize(categoryTitle)} icon" class="category-icon">
+                    ${sanitize(categoryTitle)}
+                </h3>
+                ${category?.categoryMeta ? `
+                    <div class="course-meta bg-gray-800 rounded-lg p-4 mb-4 shadow-md hover:shadow-lg transition-shadow duration-300">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-300">
+                            <div class="flex items-center gap-3 group relative" title="Average Salary Hike">
+                                <i class="fas fa-chart-line text-blue-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Avg. Salary Hike</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.salaryHike || '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.salaryHike || '0%')}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 group relative" title="Highest Salary">
+                                <i class="fas fa-money-bill text-green-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Highest Salary</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.highestSalary ? '10%' : '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.highestSalary || '0')}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 group relative" title="Career Transitions">
+                                <i class="fas fa-briefcase text-purple-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Career Transitions</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.careerTransition ? '10%' : '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.careerTransition || '0')}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 group relative" title="Hiring Partners">
+                                <i class="fas fa-building text-yellow-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Hiring Partners</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.hiringPartner ? '10%' : '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.hiringPartner || '0')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                    ${courses.map(course => {
+                const registrationStatus = getRegistrationStatus(course.registration.startDate, course.registration.endDate);
+                return `
+                    <div class="course-card bg-gray-800 rounded-xl shadow-md hover:shadow-xl transform hover:scale-[1.03] transition duration-300 overflow-hidden">
+                        <img src="${sanitize(course.img || 'https://placehold.co/300x200')}" class="course-img card-img-top" alt="Thumbnail for ${sanitize(course.title)}" loading="lazy">
+                        <div class="p-5 space-y-3">
+                            <h5 class="card-title text-lg font-semibold text-white truncate">${sanitize(course.title || 'Untitled Course')}</h5>
+                            <p class="card-text text-sm text-blue-400 flex items-center gap-2">
+                                <img src="${sanitize(course.categoryIcon)}" alt="${sanitize(categoryTitle)} icon" class="category-icon">
+                                ${sanitize(categoryTitle)}
+                            </p>
+                            <p class="card-text text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-clock"></i> Duration: ${sanitize(course.duration || 'N/A')}</p>
+                            <p class="card-text text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-users"></i> Enrolled: ${sanitize(course.enrollmentCount || 'N/A')}</p>
+                            <p class="card-text registration-status registration-${registrationStatus.toLowerCase()} text-sm font-semibold px-3 py-1 rounded-full inline-block flex items-center gap-2">
+                                <i class="fas fa-calendar"></i> Registration: ${registrationStatus}
+                            </p>
+                            ${course.hashTag ? `<span class="badge badge-custom">${sanitize(course.hashTag.value)}</span>` : ''}
+                            <a href="https://www.pwskills.com/${sanitize(course.categorySlug)}/${sanitize(course.slug)}" 
+                               class="learn-more-btn mt-3" 
+                               aria-label="Learn more about ${sanitize(course.title || 'this course')}">
+                               <span>Learn More</span>
+                               <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+                </div>
+            `;
+            fragment.appendChild(categorySection);
+        });
+        if (Object.keys(groupedByCategory).length === 0) {
+            const p = document.createElement('p');
+            p.className = 'text-center';
+            p.textContent = 'No paid courses match your search.';
+            fragment.appendChild(p);
+        }
+        paidCoursesContainer.appendChild(fragment);
+    }
+}
+
 function renderCourses(courses, container, type) {
     const fragment = document.createDocumentFragment();
     if (courses.length > 0) {
@@ -350,107 +510,7 @@ function renderCourses(courses, container, type) {
     container.innerHTML = '';
     container.appendChild(fragment);
 }
-function renderPaidCourses(categories) {
-    const paidCoursesContainer = document.getElementById('paidCoursesContainer').querySelector('div');
-    const fragment = document.createDocumentFragment();
-    if (categories.length > 0) {
-        categories.forEach(category => {
-            const cat = categories.find(c => c.title === category.title);
-            const categorySection = document.createElement('section');
-            categorySection.className = `category-section animate__animated animate__fadeIn mb-12`;
-            categorySection.dataset.category = category.slug;
-            categorySection.innerHTML = `
-                        <h3 class="text-xl font-bold mb-3 text-white flex items-center gap-2">
-                            <img src="${sanitize(category?.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
-                            ${sanitize(category.title)}
-                        </h3>
-                        ${category.categoryMeta ? `
-                            <div class="course-meta bg-gray-800 rounded-lg p-4 mb-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-300">
-                                    <div class="flex items-center gap-3 group relative" title="Average Salary Hike">
-                                        <i class="fas fa-chart-line text-blue-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Avg. Salary Hike</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.salaryHike || '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.salaryHike || '0%')}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-3 group relative" title="Highest Salary">
-                                        <i class="fas fa-money-bill text-green-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Highest Salary</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.highestSalary ? '10%' : '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.highestSalary || '0')}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-3 group relative" title="Career Transitions">
-                                        <i class="fas fa-briefcase text-purple-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Career Transitions</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.careerTransition ? '10%' : '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.careerTransition || '0')}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-3 group relative" title="Hiring Partners">
-                                        <i class="fas fa-building text-yellow-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Hiring Partners</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.hiringPartner ? '10%' : '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.hiringPartner || '0')}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                            ${category.courseDetails.map(course => {
-                const registrationStatus = getRegistrationStatus(course.registration.startDate, course.registration.endDate);
-                return `
-                                    <div class="course-card bg-gray-800 rounded-xl shadow-md hover:shadow-xl transform hover:scale-[1.03] transition duration-300 overflow-hidden p-0">
-                                        <img src="${sanitize(course.img || 'https://placehold.co/300x200')}" alt="Thumbnail for ${sanitize(course.title)}" loading="lazy" class="w-full h-48 object-cover rounded-t-xl" />
-                                        <div class="p-5 space-y-3">
-                                            <h5 class="text-lg font-semibold text-white truncate">${sanitize(course.title || 'Untitled Course')}</h5>
-                                            <p class="text-sm text-blue-400 flex items-center gap-2">
-                                                <img src="${sanitize(category?.icon || 'https://placehold.co/24')}" alt="${sanitize(category.title)} icon" class="category-icon">
-                                                ${sanitize(category.title)}
-                                            </p>
-                                            <p class="text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-clock"></i> Duration: ${sanitize(course.duration || 'N/A')}</p>
-                                            <p class="text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-users"></i> Enrolled: ${sanitize(course.enrollmentCount || 'N/A')}</p>
-                                            <p class="text-sm font-semibold px-3 py-1 rounded-full inline-block ${registrationStatus === 'Open' ? 'registration-open' : 'registration-closed'} flex items-center gap-2">
-                                                <i class="fas fa-calendar"></i> Registration: ${registrationStatus}
-                                            </p>
-                                            ${course.hashTag ? `<span class="badge badge-custom">${sanitize(course.hashTag.value)}</span>` : ''}
-                                            <a href="https://www.pwskills.com/${sanitize(cat?.slug || 'course')}/${sanitize(course.slug)}" 
-                                               class="learn-more-btn mt-3" 
-                                               aria-label="Learn more about ${sanitize(course.title || 'this course')}">
-                                               <span>Learn More</span>
-                                               <i class="fas fa-arrow-right"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                `;
-            }).join('')}
-                        </div>
-                    `;
-            fragment.appendChild(categorySection);
-        });
-    } else {
-        const p = document.createElement('p');
-        p.className = 'text-center text-gray-400 py-10';
-        p.textContent = 'No paid courses available.';
-        fragment.appendChild(p);
-    }
-    paidCoursesContainer.innerHTML = '';
-    paidCoursesContainer.appendChild(fragment);
-}
+
 function renderMentors(mentors) {
     const container = document.getElementById('mentorsContainer').querySelector('div');
     container.innerHTML = '';
@@ -520,6 +580,7 @@ function renderMentors(mentors) {
         container.appendChild(card);
     });
 }
+
 function renderTestimonials(testimonials) {
     const container = document.getElementById('testimonialsContainer').querySelector('div');
     container.innerHTML = '';
@@ -559,6 +620,7 @@ function renderTestimonials(testimonials) {
         container.appendChild(card);
     });
 }
+
 function renderSuccessStories(stories) {
     const container = document.getElementById('successStoriesContainer').querySelector('.carousel-inner');
     const fragment = document.createDocumentFragment();
@@ -604,6 +666,7 @@ function renderSuccessStories(stories) {
     container.innerHTML = '';
     container.appendChild(fragment);
 }
+
 function renderCompanies(companiesLogos) {
     const container = document.getElementById('companiesLogosContainer').querySelector('div');
     const fragment = document.createDocumentFragment();
@@ -633,151 +696,108 @@ function renderCompanies(companiesLogos) {
     container.innerHTML = '';
     container.appendChild(fragment);
 }
-function filterContent(categoryFilter, searchTerms = []) {
-    const freeCoursesContainer = document.getElementById('freeCoursesContainer').querySelector('div');
+
+function renderPaidCourses(categories) {
     const paidCoursesContainer = document.getElementById('paidCoursesContainer').querySelector('div');
-    const mentorsContainer = document.getElementById('mentorsContainer').querySelector('div');
-    const testimonialsContainer = document.getElementById('testimonialsContainer').querySelector('div');
-    let filteredCourses = allCourses;
-    if (categoryFilter !== 'all') {
-        filteredCourses = allCourses.filter(course => course.categoryId === categoryFilter);
-    }
-    if (searchTerms.length > 0) {
-        filteredCourses = filteredCourses.filter(course =>
-            searchTerms.every(term =>
-                course.title.toLowerCase().includes(term) ||
-                (course.categoryTitle || '').toLowerCase().includes(term)
-            )
-        );
-    }
-    let filteredMentors = mentors;
-    if (searchTerms.length > 0) {
-        filteredMentors = mentors.filter(mentor =>
-            searchTerms.every(term =>
-                mentor.name.toLowerCase().includes(term) ||
-                (mentor.description || '').toLowerCase().includes(term)
-            )
-        );
-    }
-    let filteredTestimonials = testimonials;
-    if (searchTerms.length > 0) {
-        filteredTestimonials = testimonials.filter(testimonial =>
-            searchTerms.every(term =>
-                testimonial.name.toLowerCase().includes(term) ||
-                (testimonial.description || '').toLowerCase().includes(term) ||
-                (testimonial.courseId?.title || '').toLowerCase().includes(term)
-            )
-        );
-    }
-    const freeCourses = filteredCourses.filter(course => course.type === 'free');
-    const paidCourses = filteredCourses.filter(course => course.type === 'paid');
-    renderCourses(freeCourses, freeCoursesContainer, 'free');
-    paidCoursesContainer.innerHTML = '';
     const fragment = document.createDocumentFragment();
-    if (categoryFilter === 'all' && searchTerms.length === 0) {
-        renderPaidCourses(paidCategories);
-    } else {
-        const groupedByCategory = paidCourses.reduce((acc, course) => {
-            acc[course.categoryTitle] = acc[course.categoryTitle] || [];
-            acc[course.categoryTitle].push(course);
-            return acc;
-        }, {});
-        Object.entries(groupedByCategory).forEach(([categoryTitle, courses]) => {
-            const category = paidCategories.find(cat => cat.title === categoryTitle);
-            const cat = categories.find(c => c.title === categoryTitle);
-            const categorySection = document.createElement('div');
-            categorySection.className = `category-section category-${sanitize(category?.slug)} animate__animated animate__fadeIn`;
-            categorySection.dataset.category = category?.slug;
+    if (categories.length > 0) {
+        categories.forEach(category => {
+            const cat = categories.find(c => c.categoryId === category.categoryId?._id) || {};
+            const categoryIcon = cat?.icon || category.categoryImage?.icon || 'https://placehold.co/24';
+            const categorySection = document.createElement('section');
+            categorySection.className = `category-section animate__animated animate__fadeIn mb-12`;
+            categorySection.dataset.category = category.slug;
             categorySection.innerHTML = `
-                        <h3 class="category-title text-xl font-bold mb-3 text-white flex items-center gap-2">
-                            <img src="${sanitize(category?.icon || 'https://placehold.co/24')}" alt="${sanitize(categoryTitle)} icon" class="category-icon">
-                            ${sanitize(categoryTitle)}
-                        </h3>
-                        ${category?.categoryMeta ? `
-                            <div class="course-meta bg-gray-800 rounded-lg p-4 mb-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-300">
-                                    <div class="flex items-center gap-3 group relative" title="Average Salary Hike">
-                                        <i class="fas fa-chart-line text-blue-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Avg. Salary Hike</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.salaryHike || '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.salaryHike || '0%')}</span>
-                                        </div>
+                <h3 class="text-xl font-bold mb-3 text-white flex items-center gap-2">
+                    <img src="${sanitize(categoryIcon)}" alt="${sanitize(category.title)} icon" class="category-icon">
+                    ${sanitize(category.title)}
+                </h3>
+                ${category.categoryMeta ? `
+                    <div class="course-meta bg-gray-800 rounded-lg p-4 mb-4 shadow-md hover:shadow-lg transition-shadow duration-300">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-300">
+                            <div class="flex items-center gap-3 group relative" title="Average Salary Hike">
+                                <i class="fas fa-chart-line text-blue-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Avg. Salary Hike</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.salaryHike || '0%')}"></div>
                                     </div>
-                                    <div class="flex items-center gap-3 group relative" title="Highest Salary">
-                                        <i class="fas fa-money-bill text-green-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Highest Salary</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.highestSalary ? '10%' : '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.highestSalary || '0')}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-3 group relative" title="Career Transitions">
-                                        <i class="fas fa-briefcase text-purple-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Career Transitions</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.careerTransition ? '10%' : '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.careerTransition || '0')}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-3 group relative" title="Hiring Partners">
-                                        <i class="fas fa-building text-yellow-400 text-lg group-hover:scale-110 transition-transform"></i>
-                                        <div class="flex-1">
-                                            <p class="font-semibold">Hiring Partners</p>
-                                            <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta.hiringPartner ? '10%' : '0%')}"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-400">${sanitize(category.categoryMeta.hiringPartner || '0')}</span>
-                                        </div>
-                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.salaryHike || '0%')}</span>
                                 </div>
                             </div>
-                        ` : ''}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                            ${courses.map(course => {
+                            <div class="flex items-center gap-3 group relative" title="Highest Salary">
+                                <i class="fas fa-money-bill text-green-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Highest Salary</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.highestSalary ? '10%' : '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.highestSalary || '0')}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 group relative" title="Career Transitions">
+                                <i class="fas fa-briefcase text-purple-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Career Transitions</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.careerTransition ? '10%' : '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.careerTransition || '0')}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 group relative" title="Hiring Partners">
+                                <i class="fas fa-building text-yellow-400 text-lg group-hover:scale-110 transition-transform"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Hiring Partners</p>
+                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: ${sanitize(category.categoryMeta?.hiringPartner ? '10%' : '0%')}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${sanitize(category.categoryMeta?.hiringPartner || '0')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                    ${category.courseDetails.map(course => {
                 const registrationStatus = getRegistrationStatus(course.registration.startDate, course.registration.endDate);
                 return `
-                                    <div class="course-card bg-gray-800 rounded-xl shadow-md hover:shadow-xl transform hover:scale-[1.03] transition duration-300 overflow-hidden">
-                                        <img src="${sanitize(course.img || 'https://placehold.co/300x200')}" class="course-img card-img-top" alt="Thumbnail for ${sanitize(course.title)}" loading="lazy">
-                                        <div class="p-5 space-y-3">
-                                            <h5 class="card-title text-lg font-semibold text-white truncate">${sanitize(course.title || 'Untitled Course')}</h5>
-                                            <p class="card-text text-sm text-blue-400 flex items-center gap-2">
-                                                <img src="${sanitize(course.categoryIcon)}" alt="${sanitize(categoryTitle)} icon" class="category-icon">
-                                                ${sanitize(categoryTitle)}
-                                            </p>
-                                            <p class="card-text text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-clock"></i> Duration: ${sanitize(course.duration || 'N/A')}</p>
-                                            <p class="card-text text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-users"></i> Enrolled: ${sanitize(course.enrollmentCount || 'N/A')}</p>
-                                            <p class="card-text registration-status registration-${registrationStatus.toLowerCase()} text-sm font-semibold px-3 py-1 rounded-full inline-block flex items-center gap-2">
-                                                <i class="fas fa-calendar"></i> Registration: ${registrationStatus}
-                                            </p>
-                                            ${course.hashTag ? `<span class="badge badge-custom">${sanitize(course.hashTag.value)}</span>` : ''}
-                                            <a href="https://www.pwskills.com/${sanitize(course.categorySlug)}/${sanitize(course.slug)}" 
-                                               class="learn-more-btn mt-3" 
-                                               aria-label="Learn more about ${sanitize(course.title || 'this course')}">
-                                               <span>Learn More</span>
-                                               <i class="fas fa-arrow-right"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                `;
+                            <div class="course-card bg-gray-800 rounded-xl shadow-md hover:shadow-xl transform hover:scale-[1.03] transition duration-300 overflow-hidden p-0">
+                                <img src="${sanitize(course.img || 'https://placehold.co/300x200')}" alt="Thumbnail for ${sanitize(course.title)}" loading="lazy" class="w-full h-48 object-cover rounded-t-xl" />
+                                <div class="p-5 space-y-3">
+                                    <h5 class="text-lg font-semibold text-white truncate">${sanitize(course.title || 'Untitled Course')}</h5>
+                                    <p class="text-sm text-blue-400 flex items-center gap-2">
+                                        <img src="${sanitize(categoryIcon)}" alt="${sanitize(category.title)} icon" class="category-icon">
+                                        ${sanitize(category.title)}
+                                    </p>
+                                    <p class="text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-clock"></i> Duration: ${sanitize(course.duration || 'N/A')}</p>
+                                    <p class="text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-users"></i> Enrolled: ${sanitize(course.enrollmentCount || 'N/A')}</p>
+                                    <p class="text-sm font-semibold px-3 py-1 rounded-full inline-block ${registrationStatus === 'Open' ? 'registration-open' : 'registration-closed'} flex items-center gap-2">
+                                        <i class="fas fa-calendar"></i> Registration: ${registrationStatus}
+                                    </p>
+                                    ${course.hashTag ? `<span class="badge badge-custom">${sanitize(course.hashTag.value)}</span>` : ''}
+                                    <a href="https://www.pwskills.com/${sanitize(category?.slug || 'course')}/${sanitize(course.slug)}" 
+                                       class="learn-more-btn mt-3" 
+                                       aria-label="Learn more about ${sanitize(course.title || 'this course')}">
+                                       <span>Learn More</span>
+                                       <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        `;
             }).join('')}
-                        </div>
-                    `;
+                </div>
+            `;
             fragment.appendChild(categorySection);
         });
-        if (Object.keys(groupedByCategory).length === 0) {
-            const p = document.createElement('p');
-            p.className = 'text-center';
-            p.textContent = 'No paid courses match your search.';
-            fragment.appendChild(p);
-        }
-        paidCoursesContainer.appendChild(fragment);
+    } else {
+        const p = document.createElement('p');
+        p.className = 'text-center text-gray-400 py-10';
+        p.textContent = 'No paid courses available.';
+        fragment.appendChild(p);
     }
+    paidCoursesContainer.innerHTML = '';
+    paidCoursesContainer.appendChild(fragment);
 }
+
 document.addEventListener('DOMContentLoaded', fetchData);
